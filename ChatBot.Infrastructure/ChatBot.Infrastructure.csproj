@@ -11,12 +11,18 @@
     <None Remove="Common\Security\" />
     <None Remove="Common\Security\Users\" />
     <None Remove="Common\Security\Documents\" />
+    <None Remove="Common\Security\TokenGenerator\" />
+    <None Remove="Persistence\" />
+    <None Remove="Persistence\Users\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Common\" />
     <Folder Include="Common\Security\" />
     <Folder Include="Common\Security\Users\" />
     <Folder Include="Common\Security\Documents\" />
+    <Folder Include="Common\Security\TokenGenerator\" />
+    <Folder Include="Persistence\" />
+    <Folder Include="Persistence\Users\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ChatBot.Application\ChatBot.Application.csproj" />

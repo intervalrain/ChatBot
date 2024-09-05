@@ -1,11 +1,8 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-
-using ChatBot.Api.Contracts;
+﻿using ChatBot.Api.Contracts;
+using ChatBot.Application.Common.Security.TokenGenerator;
+using ChatBot.Application.Persistence.Users;
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 
 namespace ChatBot.Api.Controllers;
 
@@ -13,11 +10,13 @@ namespace ChatBot.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IConfiguration _configuration;
+    private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly IUserRepository _userRepository;
 
-    public AuthController(IConfiguration configuration)
+    public AuthController(IJwtTokenGenerator jwtTokenGenerator, IUserRepository userRepository)
 	{
-        _configuration = configuration;
+        _jwtTokenGenerator = jwtTokenGenerator;
+        _userRepository = userRepository;
     }
 
     /// <summary>
@@ -41,7 +40,8 @@ public class AuthController : ControllerBase
 
         if (IsValidUser(model.UserName, model.Password))
         {
-            var token = GenerateJwtToken(model.UserName);
+            var user = _userRepository.GetUserById(model.UserName); 
+            var token = _jwtTokenGenerator.GenerateToken(user);
             return Ok(new TokenResponse { Token = token });
         }
 
@@ -50,28 +50,6 @@ public class AuthController : ControllerBase
 
     private bool IsValidUser(string userName, string password)
     {
-        return userName == "intervalrain" && password == "0931639433";
-    }
-
-    private string GenerateJwtToken(string userName)
-    {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, userName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Name, userName)
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.Now.AddMinutes(60),
-            signingCredentials: credentials);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return userName == "00053997" && password == "0931639433";
     }
 }
