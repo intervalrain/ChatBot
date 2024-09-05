@@ -23,6 +23,7 @@
   <ItemGroup>
     <None Remove="Controllers\" />
     <None Remove="Contracts\" />
+    <None Remove="Contracts\ChatRequest" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Controllers\" />

@@ -18,7 +18,7 @@ public class MockDocumentProvider : IDocumentProvider
     {
         var user = currentUserProvider.GetCurrentUser();
 
-        return user.Role == "Admin"
+        return user.IsAdmin
             ? (IEnumerable<Document>)_documents
             : _documents.Where(doc => doc.Category == "General");
     }

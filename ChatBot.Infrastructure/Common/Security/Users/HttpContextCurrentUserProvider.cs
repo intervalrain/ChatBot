@@ -1,9 +1,13 @@
-﻿using System.Security.Claims;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 using ChatBot.Application.Common.Interfaces;
 using ChatBot.Application.Common.Security.Users;
 
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Http;
+
+using Throw;
 
 namespace ChatBot.Infrastructure.Common.Security.Users;
 
@@ -18,13 +22,35 @@ public class HttpContextCurrentUserProvider : ICurrentUserProvider
 
     public CurrentUser GetCurrentUser()
     {
-        var user = _httpContextAccessor.HttpContext.User;
+        _httpContextAccessor.HttpContext.ThrowIfNull();
 
-        return new CurrentUser
+        var userId = GetSingleClaimValue(JwtRegisteredClaimNames.Sub);
+        var engName = GetSingleClaimValue(ClaimTypes.Name);
+        var chiName = GetSingleClaimValue("ChineseName");
+        var email = GetSingleClaimValue(JwtRegisteredClaimNames.Email);
+
+        var roles = GetClaimValues(ClaimTypes.Role);
+        var permissions = GetClaimValues("Permission");
+        var metaData = GetClaimValues("Metadata_Department");
+
+        var metaDataFilter = new Dictionary<string, List<string>>();
+        if (metaData.Any())
         {
-            UserName = user.Identity.Name,
-            Role = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value!
-        };
+            metaDataFilter.Add("document", metaData);
+        }
+
+        return new CurrentUser(userId, engName, chiName, email, roles, permissions, metaDataFilter);
     }
+
+    private List<string> GetClaimValues(string claimType) =>
+    _httpContextAccessor.HttpContext!.User.Claims
+        .Where(claim => claim.Type == claimType)
+        .Select(claim => claim.Value)
+        .ToList();
+
+    private string GetSingleClaimValue(string claimType) =>
+        _httpContextAccessor.HttpContext!.User.Claims
+            .Single(claim => claim.Type == claimType)
+            .Value;
 }
 

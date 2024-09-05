@@ -2,6 +2,6 @@
 
 public class ChatResponse
 {
-	public string Reply { get; set; }
+	public string Message { get; set; }
 }
 

@@ -15,6 +15,7 @@
     <None Remove="Common\Security\TokenValidation\" />
     <None Remove="Persistence\" />
     <None Remove="Persistence\Users\" />
+    <None Remove="Services\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Common\" />
@@ -25,6 +26,7 @@
     <Folder Include="Common\Security\TokenValidation\" />
     <Folder Include="Persistence\" />
     <Folder Include="Persistence\Users\" />
+    <Folder Include="Services\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />

@@ -14,6 +14,7 @@
     <None Remove="Common\Security\TokenGenerator\" />
     <None Remove="Persistence\" />
     <None Remove="Persistence\Users\" />
+    <None Remove="Services\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Common\" />
@@ -23,6 +24,7 @@
     <Folder Include="Common\Security\TokenGenerator\" />
     <Folder Include="Persistence\" />
     <Folder Include="Persistence\Users\" />
+    <Folder Include="Services\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ChatBot.Application\ChatBot.Application.csproj" />
@@ -33,5 +35,6 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.2" />
     <PackageReference Include="System.Security.Claims" Version="4.3.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Throw" Version="1.4.0" />
   </ItemGroup>
 </Project>

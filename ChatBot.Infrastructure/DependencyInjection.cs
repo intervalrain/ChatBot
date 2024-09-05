@@ -2,10 +2,12 @@
 using ChatBot.Application.Common.Security.Documents;
 using ChatBot.Application.Common.Security.TokenGenerator;
 using ChatBot.Application.Persistence.Users;
+using ChatBot.Application.Services;
 using ChatBot.Infrastructure.Common.Security.Documents;
 using ChatBot.Infrastructure.Common.Security.TokenGenerator;
 using ChatBot.Infrastructure.Common.Security.Users;
 using ChatBot.Infrastructure.Persistence.Users;
+using ChatBot.Infrastructure.Services;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +17,7 @@ public static class DependencyInjection
 {
 	public static IServiceCollection AddInfrastructure(this IServiceCollection services)
 	{
+		services.AddServices();
 		services.AddPersistence();
 		services.AddHttpContextAccessor();
 		services.AddSecurity();
@@ -22,7 +25,15 @@ public static class DependencyInjection
 		return services;
 	}
 
-	private static IServiceCollection AddPersistence(this IServiceCollection services)
+    private static IServiceCollection AddServices(this IServiceCollection services)
+	{
+		services.AddScoped<IChatService, ChatService>();
+
+		return services;
+	}
+
+
+    private static IServiceCollection AddPersistence(this IServiceCollection services)
 	{
 		services.AddSingleton<IUserRepository, UserRepository>();
 
