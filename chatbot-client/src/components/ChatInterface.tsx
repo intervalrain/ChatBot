@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 interface Message {
   role: "user" | "assistant";
@@ -8,6 +8,7 @@ interface Message {
 const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = () => {
     if (input.trim()) {
@@ -15,6 +16,19 @@ const ChatInterface: React.FC = () => {
       setInput("");
     }
   };
+
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(textarea.scrollHeight, 5 * 24); // 假設每行高度為 24px
+      textarea.style.height = `${newHeight}px`;
+    }
+  };
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input]);
 
   return (
     <div className="flex flex-col h-full">
@@ -27,10 +41,10 @@ const ChatInterface: React.FC = () => {
             }`}
           >
             <div
-              className={`p-3 rounded-lg ${
+              className={`p-3 ${
                 message.role === "user"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 dark:bg-gray-700"
+                  ? "bg-blue-500 text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg"
+                  : "bg-gray-200 dark:bg-gray-700 rounded-tl-lg rounded-tr-lg rounded-br-lg"
               }`}
             >
               {message.content}
@@ -38,15 +52,21 @@ const ChatInterface: React.FC = () => {
           </div>
         ))}
       </div>
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="p-4 pt-0 border-t border-gray-200 dark:border-gray-700">
         <div className="flex space-x-2">
-          <input
-            type="text"
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSend()}
-            className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 resize-none"
             placeholder="Type your message..."
+            rows={1}
+            style={{ maxHeight: '150px', minHeight: '38px' }}
           />
           <button
             onClick={handleSend}
