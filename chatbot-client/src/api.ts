@@ -1,4 +1,31 @@
 import { DSM } from "./types/DSM";
+import axios from "axios";
+
+interface LoginModel {
+  userName: string;
+  password: string;
+}
+
+interface TokenResponse {
+  token: string;
+}
+
+interface ChatRequest {
+  userPrompt: string;
+  systemPrompt?: string | null;
+  metaDataFilter?: Record<string, string[] | null> | null;
+  topK?: number;
+}
+
+interface ProblemDetails {
+  type?: string | null;
+  title?: string | null;
+  status?: number | null;
+  detail?: string | null;
+  instance?: string | null;
+}
+
+const baseUrl = "https://localhost:7231/api";
 
 const generations = ["22nm", "28nm", "40nm", "55nm", "90nm", "130nm"];
 const technologies = ["CBD", "eHV", "logic-mixed"];
@@ -42,12 +69,59 @@ function generateRandomDSM(i: number): DSM {
   };
 }
 
-const getDocuments = (): DSM[] => {
+export const getDocuments = (): DSM[] => {
   const documents: DSM[] = [];
   for (let i = 1; i <= 100; i++) {
     documents.push(generateRandomDSM(i));
   }
-  return documents.sort((a, b) => { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+  return documents.sort((a, b) => {
+    return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+  });
 };
 
-export default { getDocuments };
+export const login = async (loginModel: LoginModel): Promise<string> => {
+  try {
+    const response = await axios.post<TokenResponse>(
+      `${baseUrl}/Auth/login`,
+      loginModel,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      }
+    );
+    return response.data.token ?? "";
+  } catch (error) {
+    console.error("Login failed:", error);
+    throw error;
+  }
+};
+
+export const sendMessage = async (
+  chatRequest: ChatRequest,
+  token: string
+): Promise<string> => {
+  try {
+    const response = await axios.post<string>(
+      `${baseUrl}/ChatBot/chat`,
+      {
+        userPrompt: chatRequest.userPrompt,
+        systemPrompt: chatRequest.systemPrompt || "",
+        metaDataFilter: chatRequest.metaDataFilter || {},
+        topK: chatRequest.topK,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data ?? "";
+  } catch (error) {
+    console.error("Chat request failed:", error);
+    throw error;
+  }
+};

@@ -1,4 +1,4 @@
-import api from "../api";
+import { getDocuments } from "../api";
 import { DSM } from "../types/DSM";
 import Document from "./Document";
 import SelectedItems from "./SelectedItems";
@@ -26,7 +26,7 @@ const Sidebar: React.FC = () => {
 
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const documents = useMemo(() => api.getDocuments(), []);
+  const documents = useMemo(() => getDocuments(), []);
 
   useEffect(() => {
     localStorage.setItem("sidebarWidth", width.toString());
