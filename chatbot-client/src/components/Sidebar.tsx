@@ -1,18 +1,9 @@
 import api from "../api";
+import { DSM } from "../types/DSM";
 import Document from "./Document";
+import SelectedItems from "./SelectedItems";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Select, { MultiValue, StylesConfig } from "react-select";
-
-interface DSM {
-  id: number;
-  name: string;
-  generation: string;
-  technology: string;
-  category: string;
-  platform: string;
-  revisionVersion: string;
-  customMark?: string;
-}
 
 interface FilterOption {
   value: string;
@@ -20,15 +11,11 @@ interface FilterOption {
 }
 
 const Sidebar: React.FC = () => {
-  const [width, setWidth] = useState(() =>
-    parseInt(localStorage.getItem("sidebarWidth") || "256")
-  );
-  const [isResizing, setIsResizing] = useState(false);
+  const width = 450;
   const [selectedDSMs, setSelectedDSMs] = useState<number[]>([]);
-  const [isCollapsed, setIsCollapsed] = useState(
-    () => localStorage.getItem("sidebarCollapsed") === "true"
-  );
+  const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem("sidebarCollapsed") === "true");
   const [showUnselectedOnly, setShowUnselectedOnly] = useState(false);
+  const [previewState, setPreviewState] = useState<number[] | null>(null);
 
   const [filters, setFilters] = useState<Record<string, FilterOption[]>>({
     generation: [],
@@ -46,42 +33,27 @@ const Sidebar: React.FC = () => {
     localStorage.setItem("sidebarCollapsed", isCollapsed.toString());
   }, [width, isCollapsed]);
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isResizing && !isCollapsed && sidebarRef.current) {
-      const newWidth = Math.max(
-        480,
-        Math.min(
-          768,
-          e.clientX - sidebarRef.current.getBoundingClientRect().left
-        )
+  const handleDSMSelection = (dsmId: number, isClick: boolean = false) => {
+    if (isClick) {
+      setSelectedDSMs((prev) =>
+        prev.includes(dsmId)
+          ? prev.filter((id) => id !== dsmId)
+          : [...prev, dsmId]
       );
-      setWidth(newWidth);
+      setPreviewState(null);
+    } else {
+      setPreviewState((prev) => {
+        const newState = prev === null
+          ? (selectedDSMs.includes(dsmId)
+            ? selectedDSMs.filter((id) => id !== dsmId)
+            : [...selectedDSMs, dsmId])
+          : (prev.includes(dsmId)
+            ? prev.filter((id) => id !== dsmId)
+            : [...prev, dsmId]);
+        
+        return newState;
+      });
     }
-  };
-
-  const handleMouseUp = () => {
-    setIsResizing(false);
-    if (sidebarRef.current) {
-      sidebarRef.current.style.transition = "width 300ms ease-in-out";
-    }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!isCollapsed) {
-      setIsResizing(true);
-      if (sidebarRef.current) {
-        sidebarRef.current.style.transition = "none";
-      }
-    }
-  };
-
-  const handleDSMSelection = (dsmId: number) => {
-    setSelectedDSMs((prev) =>
-      prev.includes(dsmId)
-        ? prev.filter((id) => id !== dsmId)
-        : [...prev, dsmId]
-    );
   };
 
   const handleFilterChange = (
@@ -103,7 +75,11 @@ const Sidebar: React.FC = () => {
 
   const handleAdd = () => {
     const allIds = filteredDSMs.map((dsm) => dsm.id);
-    setSelectedDSMs((prevSelected) => [...prevSelected, ...allIds]);
+    setSelectedDSMs((prevSelected) => {
+      const newSelection = new Set([...prevSelected, ...allIds]);
+      return Array.from(newSelection);
+    });
+    setPreviewState(null);
   };
 
   const handleRemove = () => {
@@ -111,19 +87,39 @@ const Sidebar: React.FC = () => {
     setSelectedDSMs((prevSelected) =>
       prevSelected.filter((id) => !filteredIds.includes(id))
     );
-  };
-
-  const handleClear = () => {
-    setSelectedDSMs([]);
+    setPreviewState(null);
   };
 
   const handleSelect = () => {
     const allIds = filteredDSMs.map((dsm) => dsm.id);
     setSelectedDSMs(allIds);
+    setPreviewState(null);
+  };
+
+  const handleClear = () => {
+    setSelectedDSMs([]);
+    setPreviewState(null);
   };
 
   const handleShowUnselectedOnlyCheckboxChange = () => {
     setShowUnselectedOnly(!showUnselectedOnly);
+  };
+
+  const handlePreview = (action: 'add' | 'remove' | 'select' | 'clear') => {
+    switch (action) {
+      case 'add':
+        setPreviewState(Array.from(new Set([...selectedDSMs, ...filteredDSMs.map(dsm => dsm.id)])));
+        break;
+      case 'remove':
+        setPreviewState(selectedDSMs.filter(id => !filteredDSMs.map(dsm => dsm.id).includes(id)));
+        break;
+      case 'select':
+        setPreviewState(filteredDSMs.map(dsm => dsm.id));
+        break;
+      case 'clear':
+        setPreviewState([]);
+        break;
+    }
   };
 
   const filteredDSMs = useMemo(() => {
@@ -140,231 +136,140 @@ const Sidebar: React.FC = () => {
     ? filteredDSMs.filter((dsm) => !selectedDSMs.includes(dsm.id))
     : filteredDSMs;
 
-  const selectStyles: StylesConfig<FilterOption, true> = {
-    control: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--bg-color)",
-      borderColor: "var(--border-color)",
-      minHeight: "30px",
-      height: "30px",
-    }),
-    valueContainer: (styles) => ({
-      ...styles,
-      height: "30px",
-      padding: "4px",
-      display: "flex",
-      alignItems: "top",
-      fontSize: "14px",
-    }),
-    input: (styles) => ({
-      ...styles,
-      color: "var(--text-color)",
-      margin: "0px",
-      display: "flex",
-      alignItems: "center",
-    }),
-    indicatorsContainer: (styles) => ({
-      ...styles,
-      height: "30px",
-      display: "flex",
-      alignItems: "center",
-    }),
-    menu: (provided, state) => ({
-      ...provided,
-      backgroundColor: "var(--bg-color)",
-      zIndex: 10,
-      width: "auto",
-      minWidth: "100%",
-      left: 0,
-      fontSize: "14px",
-    }),
-    menuList: (provided) => ({
-      ...provided,
-      maxHeight: "300px",
-    }),
-    option: (styles, { isFocused, isSelected }) => ({
-      ...styles,
-      backgroundColor: isSelected
-        ? "var(--primary-color)"
-        : isFocused
-        ? "var(--hover-color)"
-        : "var(--bg-color)",
-      color: "var(--text-color)",
-    }),
-    multiValue: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--primary-color)",
-    }),
-    multiValueLabel: (styles) => ({
-      ...styles,
-      color: "white",
-      fontSize: "12px",
-      display: "flex",
-      alignItems: "center",
-      padding: "1",
-    }),
-    multiValueRemove: (styles) => ({
-      ...styles,
-      color: "white",
-      ":hover": {
-        backgroundColor: "var(--primary-dark-color)",
-        color: "white",
-      },
-    }),
-  };
-
-  useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isResizing, isCollapsed]);
-
   return (
-    <div
-      ref={sidebarRef}
-      className={`bg-[var(--secondary-bg-light)] dark:bg-[var(--secondary-bg-dark)] p-4 relative ${
-        isCollapsed ? "overflow-hidden" : "overflow-y-auto"
-      } h-screen`}
-      style={{ width: isCollapsed ? "3rem" : `${width}px` }}
-    >
-      {/* sidebar toggle button */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors z-10"
-        aria-label={isCollapsed ? "Exband sidebar" : "collased sidebar"}
-      >
-        {isCollapsed ? "►" : "◄"}
-      </button>
-
+    <>
       <div
-        className={`transition-opacity duration-300 ease-in-out ${
-          isCollapsed ? "opacity-0" : "opacity-100"
-        }`}
+        ref={sidebarRef}
+        className={`bg-[var(--secondary-bg-light)] dark:bg-[var(--secondary-bg-dark)] p-4 relative ${
+          isCollapsed ? "overflow-hidden" : "overflow-y-auto"
+        } h-screen transition-all duration-300 ease-in-out`}
+        style={{ 
+          width: isCollapsed ? "3rem" : `${width}px`,
+          paddingBottom: isCollapsed ? '0' : '40vh'  // 為 SelectedItems 預留空間
+        }}
       >
-        <h2 className="text-3xl font-semibold mb-4">DSM Documents</h2>
+        {/* Sidebar toggle button */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors z-10"
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? "►" : "◄"}
+        </button>
 
-        {/* filter options */}
-        {Object.keys(filters).map((filterType) => (
-          <div key={filterType} className="mb-3 flex items-center">
-            <h3 className="font-semibold text-base w-1/4 text-right px-1">
-              {filterType.charAt(0).toUpperCase() + filterType.slice(1)}:
-            </h3>
+        <div
+          className={`transition-opacity duration-300 ease-in-out ${
+            isCollapsed ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          <h2 className="text-3xl font-semibold mb-4">DSM Documents</h2>
 
-            {/* filter options select components */}
-            <div className="w-3/4 relative">
-              <Select<FilterOption, true>
-                isMulti
-                options={Array.from(
-                  new Set(documents.map((dsm) => dsm[filterType as keyof DSM]))
-                ).map((value) => ({
-                  value: String(value),
-                  label: String(value),
-                }))}
-                value={filters[filterType]}
-                onChange={(selectedOptions) =>
-                  handleFilterChange(filterType, selectedOptions)
-                }
-                className="react-select-container"
-                classNamePrefix="react-select"
-                styles={selectStyles}
-              />
+          {/* Filter options */}
+          {Object.keys(filters).map((filterType) => (
+            <div key={filterType} className="mb-2 flex items-center">
+              <h3 className="font-semibold text-sm w-1/4 text-right px-1">
+                {filterType.charAt(0).toUpperCase() + filterType.slice(1)}:
+              </h3>
+              <div className="w-3/4 relative">
+                <Select<FilterOption, true>
+                  isMulti
+                  options={Array.from(
+                    new Set(documents.map((dsm) => dsm[filterType as keyof DSM]))
+                  ).map((value) => ({
+                    value: String(value),
+                    label: String(value),
+                  }))}
+                  value={filters[filterType]}
+                  onChange={(selectedOptions) =>
+                    handleFilterChange(filterType, selectedOptions)
+                  }
+                  className="react-select-container text-sm text-black"
+                  classNamePrefix="react-select"
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {/* lables of filter option */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {Object.entries(filters).flatMap(([filterType, options]) =>
-            options.map((option) => (
-              <span
-                key={`${filterType}-${option.value}`}
-                className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs"
-              >
-                {option.label}
-                <button
-                  onClick={() => removeFilter(filterType, option.value)}
-                  className="ml-1 font-bold"
+          {/* Labels of filter options */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {Object.entries(filters).flatMap(([filterType, options]) =>
+              options.map((option) => (
+                <span
+                  key={`${filterType}-${option.value}`}
+                  className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs"
                 >
-                  ×
-                </button>
-              </span>
-            ))
-          )}
-        </div>
-
-        <hr />
-
-        {/* document list */}
-        <h3 className="font-semibold mb-2 text-base">Available DSMs:</h3>
-        <p className="p-1 text-sm">
-          You have chosen {selectedDSMs.length} files
-        </p>
-
-        {/* select all and clear button */}
-        <div className="flex space-x-2 mb-4">
-          <button
-            title="Add all filtered items into selection"
-            onClick={handleAdd}
-            className="px-3 py-1 rounded-md text-xs font-medium bg-gray-500 text-white shadow-md hover:bg-gray-600 transition-colors"
-          >
-            Add
-          </button>
-          <button
-            title="Remove all filtered items from selection"
-            onClick={handleRemove}
-            className="px-3 py-1 rounded-md text-xs font-medium bg-gray-500 text-white shadow-md hover:bg-gray-600 transition-colors"
-          >
-            Remove
-          </button>
-          <button
-            title="Replace selection with all filtered items"
-            onClick={handleSelect}
-            className="px-3 py-1 rounded-md text-xs font-medium bg-gray-500 text-white shadow-md hover:bg-gray-600 transition-colors"
-          >
-            Select
-          </button>
-          <button
-            title="Clear all selected items"
-            onClick={handleClear}
-            className="px-3 py-1 rounded-md text-xs font-medium bg-gray-500 text-white shadow-md hover:bg-gray-600 transition-colors"
-          >
-            Clear
-          </button>
-        </div>
-
-        {/* show selected only checkbox */}
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={showUnselectedOnly}
-            onChange={handleShowUnselectedOnlyCheckboxChange}
-            className="form-checkbox h-4 w-4"
-          />
-          <label className="text-sm p-1">Show Unselected Only</label>
-        </div>
-
-        {displayedDSMs.map((dsm) => (
-          <div key={dsm.id} className="mb-2">
-            <Document
-              name={dsm.name}
-              checked={selectedDSMs.includes(dsm.id)}
-              onClick={() => handleDSMSelection(dsm.id)}
-            />
+                  {option.label}
+                  <button
+                    onClick={() => removeFilter(filterType, option.value)}
+                    className="ml-1 font-bold"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            )}
           </div>
-        ))}
+
+          <hr />
+
+          {/* Show selected only checkbox */}
+          <div className="flex items-center space-x-2 mb-4">
+            <input
+              type="checkbox"
+              checked={showUnselectedOnly}
+              onChange={handleShowUnselectedOnlyCheckboxChange}
+              className="form-checkbox h-4 w-4"
+            />
+            <label className="text-sm">Show Unselected DSM Only</label>
+          </div>
+
+          <div className="flex-grow overflow-y-auto">
+            <h3 className="font-semibold mb-2 text-base">Available DSMs:</h3>
+
+            {displayedDSMs.map((dsm) => (
+              <div
+                key={dsm.id}
+                className="mb-2"
+                onMouseEnter={() => handleDSMSelection(dsm.id)}
+                onMouseLeave={() => setPreviewState(null)}
+              >
+                <Document
+                  name={dsm.name}
+                  checked={selectedDSMs.includes(dsm.id)}
+                  preview={
+                    previewState
+                      ? previewState.includes(dsm.id) &&
+                        !selectedDSMs.includes(dsm.id)
+                      : false
+                  }
+                  onClick={() => handleDSMSelection(dsm.id, true)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* sidebar resize */}
-      <div
-        className={`absolute top-0 right-0 bottom-0 w-2 bg-transparent ${
-          isCollapsed ? "" : "cursor-col-resize"
-        }`}
-        onMouseDown={handleMouseDown}
-      ></div>
-    </div>
+      {/* SelectedItems fix at bottom */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 transition-all duration-300 ease-in-out" 
+        style={{ 
+          width: isCollapsed ? "3rem" : `${width}px`,
+        }}
+      >
+        <SelectedItems
+          selectedDSMs={selectedDSMs}
+          documents={documents}
+          onAdd={handleAdd}
+          onRemove={handleRemove}
+          onSelect={handleSelect}
+          onClear={handleClear}
+          previewState={previewState}
+          isCollapsed={isCollapsed}
+          onPreview={handlePreview}
+        />
+      </div>
+    </>
   );
 };
 
