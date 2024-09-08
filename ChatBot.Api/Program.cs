@@ -22,6 +22,7 @@ var app = builder.Build();
         });
     }
 
+    app.UseCors("AllowAllOrigins");
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
