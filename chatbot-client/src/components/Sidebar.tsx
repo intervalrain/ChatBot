@@ -28,12 +28,15 @@ const Sidebar: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(
     () => localStorage.getItem("sidebarCollapsed") === "true"
   );
+  const [showUnselectedOnly, setShowUnselectedOnly] = useState(false);
+
   const [filters, setFilters] = useState<Record<string, FilterOption[]>>({
     generation: [],
     technology: [],
     category: [],
     platform: [],
   });
+
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const documents = useMemo(() => api.getDocuments(), []);
@@ -46,9 +49,9 @@ const Sidebar: React.FC = () => {
   const handleMouseMove = (e: MouseEvent) => {
     if (isResizing && !isCollapsed && sidebarRef.current) {
       const newWidth = Math.max(
-        384,
+        480,
         Math.min(
-          512,
+          768,
           e.clientX - sidebarRef.current.getBoundingClientRect().left
         )
       );
@@ -98,13 +101,29 @@ const Sidebar: React.FC = () => {
     }));
   };
 
-  const handleSelectAll = () => {
+  const handleAdd = () => {
     const allIds = filteredDSMs.map((dsm) => dsm.id);
-    setSelectedDSMs(allIds);
+    setSelectedDSMs((prevSelected) => [...prevSelected, ...allIds]);
+  };
+
+  const handleRemove = () => {
+    const filteredIds = filteredDSMs.map((dsm) => dsm.id);
+    setSelectedDSMs((prevSelected) =>
+      prevSelected.filter((id) => !filteredIds.includes(id))
+    );
   };
 
   const handleClear = () => {
     setSelectedDSMs([]);
+  };
+
+  const handleSelect = () => {
+    const allIds = filteredDSMs.map((dsm) => dsm.id);
+    setSelectedDSMs(allIds);
+  };
+
+  const handleShowUnselectedOnlyCheckboxChange = () => {
+    setShowUnselectedOnly(!showUnselectedOnly);
   };
 
   const filteredDSMs = useMemo(() => {
@@ -117,6 +136,10 @@ const Sidebar: React.FC = () => {
     );
   }, [documents, filters]);
 
+  const displayedDSMs = showUnselectedOnly
+    ? filteredDSMs.filter((dsm) => !selectedDSMs.includes(dsm.id))
+    : filteredDSMs;
+
   const selectStyles: StylesConfig<FilterOption, true> = {
     control: (styles) => ({
       ...styles,
@@ -128,15 +151,23 @@ const Sidebar: React.FC = () => {
     valueContainer: (styles) => ({
       ...styles,
       height: "30px",
-      padding: "0 6px",
+      padding: "4px",
+      display: "flex",
+      alignItems: "top",
+      fontSize: "14px",
     }),
     input: (styles) => ({
       ...styles,
       color: "var(--text-color)",
+      margin: "0px",
+      display: "flex",
+      alignItems: "center",
     }),
     indicatorsContainer: (styles) => ({
       ...styles,
       height: "30px",
+      display: "flex",
+      alignItems: "center",
     }),
     menu: (provided, state) => ({
       ...provided,
@@ -145,10 +176,11 @@ const Sidebar: React.FC = () => {
       width: "auto",
       minWidth: "100%",
       left: 0,
+      fontSize: "14px",
     }),
     menuList: (provided) => ({
       ...provided,
-      maxHeight: "200px",
+      maxHeight: "300px",
     }),
     option: (styles, { isFocused, isSelected }) => ({
       ...styles,
@@ -166,6 +198,10 @@ const Sidebar: React.FC = () => {
     multiValueLabel: (styles) => ({
       ...styles,
       color: "white",
+      fontSize: "12px",
+      display: "flex",
+      alignItems: "center",
+      padding: "1",
     }),
     multiValueRemove: (styles) => ({
       ...styles,
@@ -194,6 +230,7 @@ const Sidebar: React.FC = () => {
       } h-screen`}
       style={{ width: isCollapsed ? "3rem" : `${width}px` }}
     >
+      {/* sidebar toggle button */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
         className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors z-10"
@@ -207,29 +244,38 @@ const Sidebar: React.FC = () => {
           isCollapsed ? "opacity-0" : "opacity-100"
         }`}
       >
-        <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-          DSM Documents
-        </h2>
+        <h2 className="text-3xl font-semibold mb-4">DSM Documents</h2>
 
+        {/* filter options */}
         {Object.keys(filters).map((filterType) => (
-        <div key={filterType} className="mb-3 flex items-center">
-          <h3 className="font-semibold text-xs w-1/4 text-gray-800 dark:text-gray-200">
-            {filterType.charAt(0).toUpperCase() + filterType.slice(1)}:
-          </h3>
-          <div className="w-3/4 relative"> 
-            <Select<FilterOption, true>
-              isMulti
-              options={Array.from(new Set(documents.map(dsm => dsm[filterType as keyof DSM]))).map(value => ({ value: String(value), label: String(value) }))}
-              value={filters[filterType]}
-              onChange={(selectedOptions) => handleFilterChange(filterType, selectedOptions)}
-              className="react-select-container"
-              classNamePrefix="react-select"
-              styles={selectStyles}
-            />
-          </div>
-        </div>
-      ))}
+          <div key={filterType} className="mb-3 flex items-center">
+            <h3 className="font-semibold text-base w-1/4 text-right px-1">
+              {filterType.charAt(0).toUpperCase() + filterType.slice(1)}:
+            </h3>
 
+            {/* filter options select components */}
+            <div className="w-3/4 relative">
+              <Select<FilterOption, true>
+                isMulti
+                options={Array.from(
+                  new Set(documents.map((dsm) => dsm[filterType as keyof DSM]))
+                ).map((value) => ({
+                  value: String(value),
+                  label: String(value),
+                }))}
+                value={filters[filterType]}
+                onChange={(selectedOptions) =>
+                  handleFilterChange(filterType, selectedOptions)
+                }
+                className="react-select-container"
+                classNamePrefix="react-select"
+                styles={selectStyles}
+              />
+            </div>
+          </div>
+        ))}
+
+        {/* lables of filter option */}
         <div className="flex flex-wrap gap-2 mb-4">
           {Object.entries(filters).flatMap(([filterType, options]) =>
             options.map((option) => (
@@ -249,14 +295,39 @@ const Sidebar: React.FC = () => {
           )}
         </div>
 
+        <hr />
+
+        {/* document list */}
+        <h3 className="font-semibold mb-2 text-base">Available DSMs:</h3>
+        <p className="p-1 text-sm">
+          You have chosen {selectedDSMs.length} files
+        </p>
+
+        {/* select all and clear button */}
         <div className="flex space-x-2 mb-4">
           <button
-            onClick={handleSelectAll}
+            title="Add all filtered items into selection"
+            onClick={handleAdd}
             className="px-3 py-1 rounded-md text-xs font-medium bg-gray-500 text-white shadow-md hover:bg-gray-600 transition-colors"
           >
-            Select All
+            Add
           </button>
           <button
+            title="Remove all filtered items from selection"
+            onClick={handleRemove}
+            className="px-3 py-1 rounded-md text-xs font-medium bg-gray-500 text-white shadow-md hover:bg-gray-600 transition-colors"
+          >
+            Remove
+          </button>
+          <button
+            title="Replace selection with all filtered items"
+            onClick={handleSelect}
+            className="px-3 py-1 rounded-md text-xs font-medium bg-gray-500 text-white shadow-md hover:bg-gray-600 transition-colors"
+          >
+            Select
+          </button>
+          <button
+            title="Clear all selected items"
             onClick={handleClear}
             className="px-3 py-1 rounded-md text-xs font-medium bg-gray-500 text-white shadow-md hover:bg-gray-600 transition-colors"
           >
@@ -264,10 +335,18 @@ const Sidebar: React.FC = () => {
           </button>
         </div>
 
-        <h3 className="font-semibold mb-2 text-gray-800 dark:text-gray-200 text-sm">
-          Available DSMs:
-        </h3>
-        {filteredDSMs.map((dsm) => (
+        {/* show selected only checkbox */}
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={showUnselectedOnly}
+            onChange={handleShowUnselectedOnlyCheckboxChange}
+            className="form-checkbox h-4 w-4"
+          />
+          <label className="text-sm p-1">Show Unselected Only</label>
+        </div>
+
+        {displayedDSMs.map((dsm) => (
           <div key={dsm.id} className="mb-2">
             <Document
               name={dsm.name}
@@ -277,6 +356,8 @@ const Sidebar: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* sidebar resize */}
       <div
         className={`absolute top-0 right-0 bottom-0 w-2 bg-transparent ${
           isCollapsed ? "" : "cursor-col-resize"

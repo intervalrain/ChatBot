@@ -16,7 +16,7 @@ const Document: React.FC<DocumentProps> = ({ name, checked, onClick }) => {
           : "bg-gray-200 text-gray-700 hover:bg-gray-300 shadow-md shadow-gray-400"
       }`}
     >
-      DSM {name}
+      {name}
     </button>
   );
 };
