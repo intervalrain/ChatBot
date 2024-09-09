@@ -1,15 +1,11 @@
-import { sendMessage } from "../api";
+import { chatCompletion } from "../api";
+import { Message } from "../types";
 import React, { useState, useRef, useEffect, ComponentProps } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
 
 interface ChatInterfaceProps {
   token: string | null;
@@ -18,10 +14,12 @@ interface ChatInterfaceProps {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ token }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [topK, setTopK] = useState<number>(50);
   const [error, setError] = useState<string | null>(null);
+  const [topK, setTopK] = useState<number>(50);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,20 +34,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ token }) => {
       const userMessage: Message = { role: "user", content: input };
       setMessages((prevMessages) => [...prevMessages, userMessage]);
       setError(null);
-
+      setInput("");
+      setIsStreaming(true);
+  
       try {
-        const responseMessage = await sendMessage(
-          {
-            userPrompt: input,
-            topK,
-          },
-          token
-        );
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: responseMessage,
-        };
+        const assistantMessage: Message = { role: "assistant", content: '' };
         setMessages((prevMessages) => [...prevMessages, assistantMessage]);
+  
+        await chatCompletion([...messages, userMessage], (chunk) => {
+          setMessages((prevMessages) => {
+            const updatedMessages = [...prevMessages];
+            const lastMessage = updatedMessages[updatedMessages.length - 1];
+            lastMessage.content += chunk;
+            return updatedMessages;
+          });
+        });
       } catch (error) {
         console.error("Failed to send message:", error);
         if (error instanceof Error) {
@@ -57,9 +56,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ token }) => {
         } else {
           setError("An unexpected error occurred");
         }
+      } finally {
+        setIsStreaming(false);
       }
-
-      setInput("");
     }
   };
 
@@ -102,10 +101,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ token }) => {
       );
     },
   };
-
+  
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col justify-end">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => (
           <div
             key={index}
@@ -138,7 +137,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ token }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 pt-0 border-t border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex space-x-2">
           <div className="flex-1 flex flex-col">
             <div className="flex items-center mb-2">

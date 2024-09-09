@@ -1,9 +1,7 @@
 ﻿using ChatBot.Application.Common.Interfaces;
-using ChatBot.Application.Common.Security.Documents;
 using ChatBot.Application.Common.Security.TokenGenerator;
 using ChatBot.Application.Persistence.Users;
 using ChatBot.Application.Services;
-using ChatBot.Infrastructure.Common.Security.Documents;
 using ChatBot.Infrastructure.Common.Security.TokenGenerator;
 using ChatBot.Infrastructure.Common.Security.Users;
 using ChatBot.Infrastructure.Persistence.Users;
@@ -28,6 +26,7 @@ public static class DependencyInjection
     private static IServiceCollection AddServices(this IServiceCollection services)
 	{
 		services.AddScoped<IChatService, ChatService>();
+		services.AddSingleton<IDocumentService, DocumentService>();
 
 		return services;
 	}
@@ -44,7 +43,6 @@ public static class DependencyInjection
 	{
 		services.AddScoped<ICurrentUserProvider, HttpContextCurrentUserProvider>();
 		services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
-		services.AddScoped<IDocumentProvider, MockDocumentProvider>();
 
 		return services;
 	}

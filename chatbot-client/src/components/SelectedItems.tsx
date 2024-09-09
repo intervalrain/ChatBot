@@ -1,4 +1,4 @@
-import { DSM } from "../types/DSM";
+import { DSM } from "../types";
 import React, { useState } from "react";
 import { Pin } from "lucide-react";
 

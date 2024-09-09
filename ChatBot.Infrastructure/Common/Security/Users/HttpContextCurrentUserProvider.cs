@@ -1,10 +1,8 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 
 using ChatBot.Application.Common.Interfaces;
 using ChatBot.Application.Common.Security.Users;
 
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Http;
 
 using Throw;
@@ -24,10 +22,10 @@ public class HttpContextCurrentUserProvider : ICurrentUserProvider
     {
         _httpContextAccessor.HttpContext.ThrowIfNull();
 
-        var userId = GetSingleClaimValue(JwtRegisteredClaimNames.Sub);
+        var userId = GetSingleClaimValue(ClaimTypes.NameIdentifier);
         var engName = GetSingleClaimValue(ClaimTypes.Name);
         var chiName = GetSingleClaimValue("ChineseName");
-        var email = GetSingleClaimValue(JwtRegisteredClaimNames.Email);
+        var email = GetSingleClaimValue(ClaimTypes.Email);
 
         var roles = GetClaimValues(ClaimTypes.Role);
         var permissions = GetClaimValues("Permission");
@@ -36,7 +34,7 @@ public class HttpContextCurrentUserProvider : ICurrentUserProvider
         var metaDataFilter = new Dictionary<string, List<string>>();
         if (metaData.Any())
         {
-            metaDataFilter.Add("document", metaData);
+            metaDataFilter.Add("department", metaData);
         }
 
         return new CurrentUser(userId, engName, chiName, email, roles, permissions, metaDataFilter);

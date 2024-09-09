@@ -14,7 +14,7 @@ const App: React.FC = () => {
       try {
         const loginModel = { userName: '00053997', password: '0931639433' }
         const receivedToken = await login(loginModel);
-        setToken(receivedToken);
+        setToken(receivedToken.token);
       } catch (error) {
         setError('You are unauthorized to access the service.')
       }

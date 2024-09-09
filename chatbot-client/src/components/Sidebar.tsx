@@ -1,5 +1,5 @@
 import { getDocuments } from "../api";
-import { DSM } from "../types/DSM";
+import { DSM } from "../types";
 import Document from "./Document";
 import SelectedItems from "./SelectedItems";
 import React, { useState, useEffect, useRef, useMemo } from "react";
@@ -16,6 +16,9 @@ const Sidebar: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem("sidebarCollapsed") === "true");
   const [showUnselectedOnly, setShowUnselectedOnly] = useState(false);
   const [previewState, setPreviewState] = useState<number[] | null>(null);
+  const [documents, setDocuments] = useState<DSM[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<Record<string, FilterOption[]>>({
     generation: [],
@@ -26,7 +29,23 @@ const Sidebar: React.FC = () => {
 
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const documents = useMemo(() => getDocuments(), []);
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedDocuments = await getDocuments();
+        setDocuments(fetchedDocuments);
+        setError(null);
+      } catch (error) {
+        setError("Failed to fetch documents");
+        console.error("Error fetching documents", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchDocuments();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("sidebarWidth", width.toString());
@@ -122,7 +141,7 @@ const Sidebar: React.FC = () => {
     }
   };
 
-  const filteredDSMs = useMemo(() => {
+  const filteredDSMs: DSM[] = useMemo(() => {
     return documents.filter((dsm) =>
       Object.entries(filters).every(
         ([key, options]) =>
@@ -133,8 +152,16 @@ const Sidebar: React.FC = () => {
   }, [documents, filters]);
 
   const displayedDSMs = showUnselectedOnly
-    ? filteredDSMs.filter((dsm) => !selectedDSMs.includes(dsm.id))
-    : filteredDSMs;
+    ? filteredDSMs.sort((a, b) => a.name.localeCompare(b.name)).filter((dsm) => !selectedDSMs.includes(dsm.id))
+    : filteredDSMs.sort((a, b) => a.name.localeCompare(b.name));
+
+  if (isLoading) {
+    return <div>Loading documents...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>
+  }
 
   return (
     <>
@@ -175,7 +202,9 @@ const Sidebar: React.FC = () => {
                   isMulti
                   options={Array.from(
                     new Set(documents.map((dsm) => dsm[filterType as keyof DSM]))
-                  ).map((value) => ({
+                  )
+                  .sort((a, b) => String(a).localeCompare(String(b)))
+                  .map((value) => ({
                     value: String(value),
                     label: String(value),
                   }))}

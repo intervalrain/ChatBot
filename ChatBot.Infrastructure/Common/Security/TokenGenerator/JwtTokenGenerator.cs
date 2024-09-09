@@ -26,10 +26,10 @@ public class JwtTokenGenerator : IJwtTokenGenerator
 
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UserId),
+            new Claim(ClaimTypes.NameIdentifier, user.UserId),
             new Claim(ClaimTypes.Name, user.EngName),
             new Claim("ChineseName", user.ChiName),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email)
+            new Claim(ClaimTypes.Email, user.Email)
         };
 
         user.Roles?.ForEach(role => claims.Add(new Claim(ClaimTypes.Role, role)));
@@ -50,6 +50,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             expires: DateTime.UtcNow.AddMinutes(_jwtSettings.Expiration),
             signingCredentials: credentials);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        var result = new JwtSecurityTokenHandler().WriteToken(token);
+
+        return result;
     }
 }
