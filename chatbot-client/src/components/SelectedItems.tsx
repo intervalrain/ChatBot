@@ -46,8 +46,8 @@ const SelectedItems: React.FC<SelectedItemsProps> = ({
     <div 
       className={`bg-[var(--secondary-bg-light)] dark:bg-[var(--secondary-bg-dark)] transition-all duration-300 ease-in-out rounded-t-lg shadow-lg`}
       style={{
-        height: isPinned ? '40vh' : `${Math.min(totalDocs * 30 + 120, window.innerHeight * 0.4)}px`,
-        maxHeight: '40vh'
+        height: isPinned ? '36vh' : `${Math.min(totalDocs * 30 + 120, window.innerHeight * 0.4)}px`,
+        maxHeight: '36vh'
       }}
     >
       <div className="p-4">

@@ -62,10 +62,12 @@ const App: React.FC = () => {
 
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <header className="flex justify-between items-center p-4">
+    <div className="flex h-screen overflow-hidden">
+      <div className="flex-shrink-0">
+        <Sidebar />
+      </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="flex justify-between items-center p-4 flex-shrink-0 h-20">
           <h1 className="text-4xl font-bold p-4">DSM Bot</h1>
           <ThemeToggle />
         </header>
